@@ -125,7 +125,7 @@ app.post('/', ifLoggedin, [
         dbConnection.query("SELECT * FROM account WHERE email=$1",[user_email])
         .then(rows => {
             // console.log(rows);
-            console.log(rows["rows"][0].pass);
+            // console.log(rows["rows"][0].pass);
             bcrypt.compare(user_pass, rows["rows"][0].pass).then(compare_result => {
                 if(compare_result === true){
                     req.session.isLoggedIn = true;
