@@ -11,7 +11,7 @@ app.use(express.urlencoded({extended:false}));
 // SET OUR VIEWS AND VIEW ENGINE
 app.set('views', path.join(__dirname,'views'));
 app.set('view engine','ejs');
-app.engine('ejs', require('ejs').__express);//ใส่เองไม่ได้มีผลอะไรหรอก
+app.engine('ejs', require('ejs').__express);
 
 // APPLY COOKIE SESSION MIDDLEWARE
 app.use(cookieSession({
@@ -19,16 +19,22 @@ app.use(cookieSession({
     keys: ['key1', 'key2'],
     maxAge:  3600 * 1000 // 1hr
 }));
+console.log('cookie in use 22');
 
 // DECLARING CUSTOM MIDDLEWARE
+console.log('test session use will be use in next line')
 const ifNotLoggedin = (req, res, next) => {
+    console.log(!req.session.isLoggedIn);
     if(!req.session.isLoggedIn){
+        console.log('hulay i use');
         return res.render('login-register');
     }
     next();
 }
+console.log('788');
 const ifLoggedin = (req,res,next) => {
     if(req.session.isLoggedIn){
+        console.log('789');
         return res.redirect('/home');
     }
     next();
@@ -37,8 +43,10 @@ const ifLoggedin = (req,res,next) => {
 // ROOT PAGE
 app.get('/', ifNotLoggedin, (req,res,next) => {
     // chang the db and value ok
+    console.log('root page get/ ifnotlogin 43');
     dbConnection.query("SELECT name FROM account WHERE id=$1",[req.session.userID])
     .then(rows => {
+        console.log('render home 46');
         res.render('home',{
             name:rows["rows"][0].name
         });
@@ -53,6 +61,8 @@ app.post('/register', ifLoggedin,
 [
     body('user_email','Invalid email address!').isEmail().custom((value) => {
         //chang db table and value ok
+        console.log(req.session.userID);
+        console.log('post/register iflogin 60')
         return dbConnection.query('SELECT email FROM account WHERE email = $1', [value])//add ;
         .then(rows => {
             if(rows.length > 0){
@@ -67,6 +77,7 @@ app.post('/register', ifLoggedin,
 (req,res,next) => {
 
     const validation_result = validationResult(req);
+    console.log(req.session.userID);
     const {user_name, user_pass, user_email} = req.body;
     // IF validation_result HAS NO ERROR
     if(validation_result.isEmpty()){
@@ -74,6 +85,7 @@ app.post('/register', ifLoggedin,
         bcrypt.hash(user_pass, 12).then((hash_pass) => {
             // INSERTING USER INTO DATABASE
             //---chang table name users -> account password -> pass value-> ok
+            console.log('query while insert 82')
             dbConnection.query("INSERT INTO account(name,email,pass) VALUES($1,$2,$3)",[user_name,user_email, hash_pass])
             .then(result => {
                 res.send(`your account has been created successfully, Now you can <a href="/">Login</a>`);
@@ -93,6 +105,7 @@ app.post('/register', ifLoggedin,
             return error.msg;
         });
         // REDERING login-register PAGE WITH VALIDATION ERRORS
+        console.log('render 103');
         res.render('login-register',{
             register_error:allErrors,
             old_data:req.body
@@ -108,10 +121,10 @@ app.post('/', ifLoggedin, [
         return dbConnection.query('SELECT email FROM account WHERE email=$1', [value])
         .then(rows => {
             if(rows["rows"].length == 1){
-                // console.log(rows["rows"]);
+                console.log(rows["rows"]);
                 return true;               
             }
-            // console.log(rows["rows"]);
+            console.log(rows["rows"]);
             // console.log(value);
             return Promise.reject('Invalid Email Address!'); 
         });
@@ -128,12 +141,15 @@ app.post('/', ifLoggedin, [
             // console.log(rows["rows"][0].pass);
             bcrypt.compare(user_pass, rows["rows"][0].pass).then(compare_result => {
                 if(compare_result === true){
+                    console.log('murara');
                     req.session.isLoggedIn = true;
                     req.session.userID = rows["rows"][0].id;
+                    console.log(req.session.userID);
 
                     res.redirect('/');
                 }
                 else{
+                    console.log('render 145');
                     res.render('login-register',{
                         login_errors:['Invalid Password!']
                     });
@@ -153,6 +169,7 @@ app.post('/', ifLoggedin, [
             return error.msg;
         });
         // REDERING login-register PAGE WITH LOGIN VALIDATION ERRORS
+        console.log('render 165');
         res.render('login-register',{
             login_errors:allErrors
         });
@@ -170,6 +187,7 @@ app.get('/logout',(req,res)=>{
 
 app.use('/', (req,res) => {
     res.status(404).send('<h1>404 Page Not Found!</h1>');
+    console.log(req.session.userID);
 });
 
 
